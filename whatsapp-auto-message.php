@@ -2,7 +2,7 @@
 /*
 Plugin Name: WhatsApp Auto Message
 Description: Envía mensajes automáticos de WhatsApp al finalizar una compra en WooCommerce usando la API oficial de whatsapp.
-Version: 0.1
+Version: 0.2
 Author: Orlando Montesinos Quintana
 Author URI: https://orlandomontesinos.com/
 */
@@ -83,7 +83,28 @@ function wam_options_page_html() {
 }
 
 /**
- * Hook WooCommerce: al completar pedido (mensaje completo para Ventas)
+ * Helper: obtiene dirección de envío con fallback a facturación
+ */
+function wam_get_shipping_address( $order ) {
+    $first_name = $order->get_shipping_first_name() ?: $order->get_billing_first_name();
+    $last_name  = $order->get_shipping_last_name() ?: $order->get_billing_last_name();
+    $address_1  = $order->get_shipping_address_1() ?: $order->get_billing_address_1();
+    $address_2  = $order->get_shipping_address_2() ?: $order->get_billing_address_2();
+    $city       = $order->get_shipping_city() ?: $order->get_billing_city();
+    $postcode   = $order->get_shipping_postcode() ?: $order->get_billing_postcode();
+
+    $out  = $first_name . " " . $last_name . "\n";
+    $out .= $address_1 . "\n";
+    if ( $address_2 ) {
+        $out .= $address_2 . "\n";
+    }
+    $out .= $city . "\n" . $postcode . "\n\n";
+
+    return $out;
+}
+
+/**
+ * Hook WooCommerce: al completar pedido
  */
 function wam_send_whatsapp_message( $order_id ) {
     if ( ! $order_id ) return;
@@ -96,8 +117,8 @@ function wam_send_whatsapp_message( $order_id ) {
     $phone_id    = get_option( 'wam_wa_api_phone_id' );
     $recipient   = get_option( 'wam_wa_api_recipient' ); // Ventas
 
-    // Construcción de mensaje completo (Ventas) ...
-    $message  = "*Mensaje enviado Automaticamente*\n";
+    // Construcción de mensaje completo (Ventas)
+    $message  = "*Mensaje enviado Automáticamente*\n";
     $message .= "*a través de IA.*\n\n";
     $message .= "Hola Soy " . $order->get_billing_first_name() . "!\n";
     $message .= "He realizado la compra de los siguientes productos:\n\n";
@@ -111,16 +132,11 @@ function wam_send_whatsapp_message( $order_id ) {
         $message .= "*" . $item->get_name() . "*\n\n";
     }
 
-    $message .= "*Precio Total:*\n";
+    $message .= "*Subtotal:*\n";
     $message .= number_format($order->get_subtotal(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
     $message .= "*Metodo de Pago:*\n" . $order->get_payment_method_title() . "\n\n";
-    $message .= "*Teléfono:*\n" . $order->get_billing_phone() . "\n\n";
-    $message .= "*Datos de Cliente:*\n" . $order->get_billing_first_name() . " " . $order->get_billing_last_name() . "\n";
-    $message .= $order->get_billing_address_1() . "\n";
-    if ( $order->get_billing_address_2() ) {
-        $message .= $order->get_billing_address_2() . "\n";
-    }
-    $message .= $order->get_billing_city() . "\n" . $order->get_billing_postcode() . "\n\n";
+    $message .= "*Teléfono:*\n" . $order->get_shipping_phone() . "\n\n";
+    $message .= "*Datos de Envío:*\n" . wam_get_shipping_address( $order );
 
     $shipping_total  = $order->get_shipping_total();
     $shipping_method = $order->get_shipping_method();
@@ -135,24 +151,9 @@ function wam_send_whatsapp_message( $order_id ) {
         $message .= "Sin costo de envío\n\n";
     }
 
-    // if ( $order->get_coupon_codes() ) {
-    //     $message .= "*Cupones aplicados:*\n";
-    //     foreach ( $order->get_items('coupon') as $item ) {
-    //         $code     = $item->get_code();
-    //         $discount = $item->get_discount();
-
-    //         // Formato limpio para WhatsApp
-    //         $discount_text = number_format( $discount, 2, '.', ',' ) . " " . $order->get_currency();
-
-    //         $message .= "- " . $code . " (descuento: " . $discount_text . ")\n";
-    //     }
-    //     $message .= "\n";
-    // }
-
     $message .= "*Total:*\n" . number_format($order->get_total(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
 
     $cambio = get_post_meta( $order_id, '_monto_cambio', true );
-
     if ( ! empty( $cambio ) ) {
         $currency_symbol = get_woocommerce_currency_symbol( $order->get_currency() );
         $message .= "*Monto del billete para cambio:*\n" . number_format( $cambio, 2, '.', ',' ) . $currency_symbol . "\n\n";
@@ -164,18 +165,13 @@ function wam_send_whatsapp_message( $order_id ) {
     wam_send_to_whatsapp_api( $token, $graph, $phone_id, $recipient, $message );
 
     // Enviar mensaje simplificado a Paquetería
-    $delivery_number = get_option( 'wam_wa_api_delivery' ); // Nuevo campo en opciones
+    $delivery_number = get_option( 'wam_wa_api_delivery' );
     if ( $delivery_number ) {
-        $short_msg  = "*Mensaje enviado Automaticamente*\n";
+        $short_msg  = "*Mensaje enviado Automáticamente*\n";
         $short_msg .= "*a través de IA.*\n\n";
         $short_msg .= "*Pedido #" . $order->get_order_number() . "*\n\n";
         $short_msg .= "*Metodo de Pago:*\n" . $order->get_payment_method_title() . "\n\n";
-        $short_msg .= "*Datos de Cliente:*\n" . $order->get_billing_first_name() . " " . $order->get_billing_last_name() . "\n";
-        $short_msg .= $order->get_billing_address_1() . "\n";
-        if ( $order->get_billing_address_2() ) {
-            $short_msg .= $order->get_billing_address_2() . "\n";
-        }
-        $short_msg .= $order->get_billing_city() . "\n" . $order->get_billing_postcode() . "\n\n";
+        $short_msg .= "*Datos de Envío:*\n" . wam_get_shipping_address( $order );
         $short_msg .= "*Total:*\n" . number_format($order->get_total(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
 
         if ( ! empty( $cambio ) ) {
