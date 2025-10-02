@@ -163,6 +163,12 @@ function wam_send_whatsapp_message( $order_id ) {
         $message .= "*Monto del billete para cambio:*\n" . number_format( $cambio, 2, '.', ',' ) . $currency_symbol . "\n\n";
     }
 
+    $customer_note = $order->get_customer_note();
+    if ( ! empty( $customer_note ) ) {
+        $message .= "*Nota de Pedido:*\n" . $customer_note . "\n\n";
+    }
+
+
     $message .= "-";
 
     // Enviar mensaje a Ventas
@@ -181,6 +187,11 @@ function wam_send_whatsapp_message( $order_id ) {
         if ( ! empty( $cambio ) ) {
             $currency_symbol = get_woocommerce_currency_symbol( $order->get_currency() );
             $short_msg .= "*Monto del billete para cambio:*\n" . number_format( $cambio, 2, '.', ',' ) . $currency_symbol . "\n\n";
+        }
+
+        $customer_note = $order->get_customer_note();
+        if ( ! empty( $customer_note ) ) {
+            $short_msg .= "*Nota de Pedido:*\n" . $customer_note . "\n\n";
         }
 
         $short_msg .= "-";
