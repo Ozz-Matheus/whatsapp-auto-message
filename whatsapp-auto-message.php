@@ -91,14 +91,18 @@ function wam_get_shipping_address( $order ) {
     $address_1  = $order->get_shipping_address_1() ?: $order->get_billing_address_1();
     $address_2  = $order->get_shipping_address_2() ?: $order->get_billing_address_2();
     $city       = $order->get_shipping_city() ?: $order->get_billing_city();
+    $state      = $order->get_shipping_state() ?: $order->get_billing_state();
     $postcode   = $order->get_shipping_postcode() ?: $order->get_billing_postcode();
+    $country    = $order->get_shipping_country() ?: $order->get_billing_country();
 
     $out  = $first_name . " " . $last_name . "\n";
     $out .= $address_1 . "\n";
     if ( $address_2 ) {
         $out .= $address_2 . "\n";
     }
-    $out .= $city . "\n" . $postcode . "\n\n";
+    $out .= $city . ", " . $state . "\n";
+    $out .= $postcode . "\n";
+    $out .= $country . "\n\n";
 
     return $out;
 }
