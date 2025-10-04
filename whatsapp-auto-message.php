@@ -67,6 +67,14 @@ function wam_options_page_html() {
                     <td><input type="text" name="wam_wa_api_phone_id" value="<?php echo esc_attr( get_option('wam_wa_api_phone_id') ); ?>" style="width:400px;"></td>
                 </tr>
                 <tr valign="top">
+                    <th scope="row">
+                        <h2>Números :</h2>
+                    </th>
+                    <td>
+                        <p>Estos números son los que usara WhatsApp para enviar el mensaje automático.</p>
+                    </td>
+                </tr>
+                <tr valign="top">
                     <th scope="row">Destinatario ( Ventas )</th>
                     <td><input type="text" name="wam_wa_api_recipient" value="<?php echo esc_attr( get_option('wam_wa_api_recipient') ); ?>" style="width:400px;"></td>
                 </tr>
@@ -181,6 +189,7 @@ function wam_send_whatsapp_message( $order_id ) {
         $short_msg .= "*a través de IA.*\n\n";
         $short_msg .= "*Pedido #" . $order->get_order_number() . "*\n\n";
         $short_msg .= "*Metodo de Pago:*\n" . $order->get_payment_method_title() . "\n\n";
+        $short_msg .= "*Teléfono:*\n" . $order->get_shipping_phone() . "\n\n";
         $short_msg .= "*Datos de Envío:*\n" . wam_get_shipping_address( $order );
         $short_msg .= "*Total:*\n" . number_format($order->get_total(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
 
