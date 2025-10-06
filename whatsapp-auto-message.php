@@ -2,7 +2,7 @@
 /*
 Plugin Name: WhatsApp Auto Message
 Description: Envía mensajes automáticos de WhatsApp al finalizar una compra en WooCommerce usando la API oficial de whatsapp.
-Version: 0.2
+Version: 0.3
 Author: Orlando Montesinos Quintana
 Author URI: https://orlandomontesinos.com/
 */
@@ -71,11 +71,11 @@ function wam_options_page_html() {
                         <h2>Números :</h2>
                     </th>
                     <td>
-                        <p>Estos números son los que usara WhatsApp para enviar el mensaje automático.</p>
+                        <p>Estos números son los que usará WhatsApp para enviar el mensaje automático.</p>
                     </td>
                 </tr>
                 <tr valign="top">
-                    <th scope="row">Destinatario ( Ventas )</th>
+                    <th scope="row">Destinatario (Ventas)</th>
                     <td><input type="text" name="wam_wa_api_recipient" value="<?php echo esc_attr( get_option('wam_wa_api_recipient') ); ?>" style="width:400px;"></td>
                 </tr>
                 <tr valign="top">
@@ -102,6 +102,7 @@ function wam_get_shipping_address( $order ) {
     $state      = $order->get_shipping_state() ?: $order->get_billing_state();
     $postcode   = $order->get_shipping_postcode() ?: $order->get_billing_postcode();
     $country    = $order->get_shipping_country() ?: $order->get_billing_country();
+    $phone      = $order->get_shipping_phone() ?: $order->get_billing_phone();
 
     $out  = $first_name . " " . $last_name . "\n";
     $out .= $address_1 . "\n";
@@ -111,6 +112,10 @@ function wam_get_shipping_address( $order ) {
     $out .= $city . ", " . $state . "\n";
     $out .= $postcode . "\n";
     $out .= $country . "\n\n";
+    if ( $phone ) {
+        $out .= "*Teléfono* : " . $phone . "\n";
+    }
+    $out .= "\n";
 
     return $out;
 }
@@ -147,7 +152,6 @@ function wam_send_whatsapp_message( $order_id ) {
     $message .= "*Subtotal:*\n";
     $message .= number_format($order->get_subtotal(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
     $message .= "*Metodo de Pago:*\n" . $order->get_payment_method_title() . "\n\n";
-    $message .= "*Teléfono:*\n" . $order->get_shipping_phone() . "\n\n";
     $message .= "*Datos de Envío:*\n" . wam_get_shipping_address( $order );
 
     $shipping_total  = $order->get_shipping_total();
@@ -176,7 +180,6 @@ function wam_send_whatsapp_message( $order_id ) {
         $message .= "*Nota de Pedido:*\n" . $customer_note . "\n\n";
     }
 
-
     $message .= "-";
 
     // Enviar mensaje a Ventas
@@ -189,7 +192,6 @@ function wam_send_whatsapp_message( $order_id ) {
         $short_msg .= "*a través de IA.*\n\n";
         $short_msg .= "*Pedido #" . $order->get_order_number() . "*\n\n";
         $short_msg .= "*Metodo de Pago:*\n" . $order->get_payment_method_title() . "\n\n";
-        $short_msg .= "*Teléfono:*\n" . $order->get_shipping_phone() . "\n\n";
         $short_msg .= "*Datos de Envío:*\n" . wam_get_shipping_address( $order );
         $short_msg .= "*Total:*\n" . number_format($order->get_total(), 2, '.', ',') . " " . $order->get_currency() . "\n\n";
 
