@@ -145,8 +145,9 @@ function wam_send_whatsapp_message( $order_id ) {
         $product  = $item->get_product();
         $price    = $product ? $product->get_price() : 0;
         $quantity = $item->get_quantity();
-        $message .= $quantity . "x - *Valor : $" . number_format($price, 0, '.', ',') . "* - ";
-        $message .= "*" . $item->get_name() . "*\n\n";
+        $message .= $quantity . "x - ";
+        $message .= "*" . $item->get_name() . "* / ";
+        $message .= "*Valor por unidad : $" . number_format($price, 0, '.', ',') . "*\n\n";
     }
 
     $message .= "*Subtotal:*\n";
